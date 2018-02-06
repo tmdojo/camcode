@@ -71,9 +71,11 @@ def shoot_post(aio, topic):
     pic_name = os.path.join(dirs, get_filename(now))
     camera.capture(pic_name)
     sleep(2)
+    print("Took picture: {}".format(pic_name))
 
     with open(pic_name, "rb") as imageFile:
-        img64 = base64.b64encode(imageFile.read())
+        encoded = base64.b64encode(imageFile.read())
+        img64 = encoded.decode('ascii')
 
     aio.send(topic, img64 )
 
