@@ -76,7 +76,6 @@ def shoot_post(aio, topic):
     with open(pic_name, "rb") as imageFile:
         encoded = base64.b64encode(imageFile.read())
         img64 = encoded.decode('ascii')
-
-    aio.send(topic, img64 )
+        aio.send(topic, img64 )
 
 shoot_post(aio, topic)
