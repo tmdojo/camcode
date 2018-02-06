@@ -9,9 +9,10 @@ from Adafruit_IO import Client
 from picamera import PiCamera
 
 # define credentials in secret.py file
-import .secret
+# SECRET = "adafruit.io AIO Key"
+from secret import *
 
-aio = Client('SECRET')
+aio = Client(SECRET)
 topic = 'picam1'
 BASE_DIR='/home/pi/Pictures/'
 
