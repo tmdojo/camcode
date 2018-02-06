@@ -4,17 +4,29 @@ from time import sleep
 from datetime import datetime
 import os
 import base64
+
 from PIL import Image
-from Adafruit_IO import Client
 from picamera import PiCamera
+from Adafruit_IO import Client
+import dropbox
+from dropbox.files import WriteMode
+from dropbox.exceptions import ApiError, AuthError
 
 # define credentials in secret.py file
 # SECRET = "adafruit.io AIO Key"
+# DROPBOX_ACCESS_TOKEN = ""
 from secret import *
 
 aio = Client(SECRET)
 topic = 'picam1'
 BASE_DIR='/home/pi/Pictures/'
+
+dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
+# Check that the access token is valid
+try:
+    dbx.users_get_current_account()
+except AuthError as err:
+    print("ERROR: Invalid access token; try re-generating an access token from the app console on the web.")
 
 camera = PiCamera()
 camera.resolution = (320, 240)
@@ -74,8 +86,30 @@ def shoot_post(aio, topic):
     print("Took picture: {}".format(pic_name))
 
     with open(pic_name, "rb") as imageFile:
-        encoded = base64.b64encode(imageFile.read())
-        img64 = encoded.decode('ascii')
+        img64 = base64.b64encode(imageFile.read()).decode('ascii')
         aio.send(topic, img64 )
+
+    upload_dropbox(pic_name)
+
+# Uploads contents of pic_name to Dropbox
+def upload_dropbox(pic_name):
+    with open(pic_name, 'rb') as f:
+        # We use WriteMode=overwrite to make sure that the settings in the file
+        # are changed on upload
+        BACKUPPATH = pic_name
+        print("Uploading " + pic_name + " to Dropbox as " + BACKUPPATH + "...")
+        try:
+            dbx.files_upload(f.read(), BACKUPPATH, mode=WriteMode('overwrite'))
+        except ApiError as err:
+            # This checks for the specific error where a user doesn't have enough Dropbox space quota to upload this file
+            if (err.error.is_path() and
+                    err.error.get_path().error.is_insufficient_space()):
+                print("ERROR: Cannot back up; insufficient space.")
+            elif err.user_message_text:
+                print(err.user_message_text)
+                #sys.exit()
+            else:
+                print(err)
+                #sys.exit()
 
 shoot_post(aio, topic)
