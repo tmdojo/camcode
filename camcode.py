@@ -70,6 +70,7 @@ def shoot_post(aio, topic):
     dirs = get_dirs(BASE_DIR, now)
     pic_name = os.path.join(dirs, get_filename(now))
     camera.capture(pic_name)
+    sleep(2)
 
     with open(pic_name, "rb") as imageFile:
         img64 = base64.b64encode(imageFile.read())
