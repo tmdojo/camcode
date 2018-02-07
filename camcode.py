@@ -84,12 +84,12 @@ def shoot_post(aio, topic):
     camera.capture(pic_name)
     sleep(2)
     print("Took picture: {}".format(pic_name))
-
-    with open(pic_name, "rb") as imageFile:
-        img64 = base64.b64encode(imageFile.read()).decode('ascii')
-        aio.send(topic, img64 )
-
     upload_dropbox(pic_name)
+
+    # with open(pic_name, "rb") as imageFile:
+    #     img64 = base64.b64encode(imageFile.read()).decode('ascii')
+    #     aio.send(topic, img64 )
+
 
 # Uploads contents of pic_name to Dropbox
 def upload_dropbox(pic_name):
