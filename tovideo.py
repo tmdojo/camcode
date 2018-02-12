@@ -35,10 +35,10 @@ def decode_filename(fname):
     dt_utc =  timezone('UTC').localize(dt)
     return dt_utc
 
-#BASE_DIR='/home/pi/Pictures/'
-BASE_DIR='/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/'
+BASE_DIR='/home/pi/Pictures/'
+#BASE_DIR='/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/'
 target_folder = get_yesterday()
-target_folder = "2018/2/7"
+#target_folder = "2018/2/7"
 target_video_name = get_video_name(target_folder)
 tmp_folder = "temp"
 
