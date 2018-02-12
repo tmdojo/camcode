@@ -11,15 +11,20 @@ from Adafruit_IO import Client
 import dropbox
 from dropbox.files import WriteMode
 from dropbox.exceptions import ApiError, AuthError
+import boto3
 
 # define credentials in secret.py file
 # SECRET = "adafruit.io AIO Key"
 # DROPBOX_ACCESS_TOKEN = ""
+# AWS_ACCESS_KEY_ID = ""
+# AWS_SECRET_ACCESS_KEY = ""
+# AWS_REGION = "us-east-1" #US East (N. Virginia)
 from secret import *
+
+BASE_DIR='/home/pi/Pictures/'
 
 aio = Client(SECRET)
 topic = 'picam1'
-BASE_DIR='/home/pi/Pictures/'
 
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 # Check that the access token is valid
@@ -27,6 +32,12 @@ try:
     dbx.users_get_current_account()
 except AuthError as err:
     print("ERROR: Invalid access token; try re-generating an access token from the app console on the web.")
+
+s3 = boto3.resource('s3',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+#bucket = s3.Bucket(BUCKET_NAME)
 
 camera = PiCamera()
 camera.resolution = (320, 240)
@@ -123,3 +134,11 @@ def upload_dropbox(pic_name, dbx):
 pic_name = take_picture()
 upload_dropbox(pic_name, dbx)
 #upload_adafruitio(pic_name, aio, topic)
+#pic_name = "/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/2018/2/12/20180212000016.jpg"
+#pic_name2 = "/home/pi/Pictures/2018/2/12/20180212000016.jpg"
+s3.Bucket(BUCKET_NAME).upload_file(pic_name, pic_name)
+# test
+#for obj in s3.Bucket(BUCKET_NAME).objects.all():
+#   print(obj.key)
+#for obj in s3.Bucket(BUCKET_NAME).objects.filter(Prefix="/home/pi/Pictures/").all():
+#    print(obj.key)
