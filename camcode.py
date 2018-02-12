@@ -73,10 +73,9 @@ def get_filename(d):
     timestamp = d.strftime("%Y%m%d%H%M%S")
     return "{}.jpg".format(timestamp)
 
-def shoot_post(aio, topic):
+def take_picture():
     """
-    aio: Adafruit_IO.Client instance
-    topic: topic name to publish to
+    Take picture and returns full path of the image file
     """
     now = datetime.utcnow()
     dirs = get_dirs(BASE_DIR, now)
@@ -84,15 +83,24 @@ def shoot_post(aio, topic):
     camera.capture(pic_name)
     sleep(2)
     print("Took picture: {}".format(pic_name))
-    upload_dropbox(pic_name)
+    return pic_name
 
-    # with open(pic_name, "rb") as imageFile:
-    #     img64 = base64.b64encode(imageFile.read()).decode('ascii')
-    #     aio.send(topic, img64 )
-
+def upload_adafruitio(pic_name, aio, topic):
+    """
+    pic_name: image file name
+    aio: Adafruit_IO.Client instance
+    topic: topic name to publish to
+    """
+    with open(pic_name, "rb") as imageFile:
+        img64 = base64.b64encode(imageFile.read()).decode('ascii')
+        aio.send(topic, img64 )
 
 # Uploads contents of pic_name to Dropbox
-def upload_dropbox(pic_name):
+def upload_dropbox(pic_name, dbx):
+    """
+    pic_name: image file name
+    dbx: dropbox.Dropbox instance
+    """
     with open(pic_name, 'rb') as f:
         # We use WriteMode=overwrite to make sure that the settings in the file
         # are changed on upload
@@ -112,4 +120,6 @@ def upload_dropbox(pic_name):
                 print(err)
                 #sys.exit()
 
-shoot_post(aio, topic)
+pic_name = take_picture()
+upload_dropbox(pic_name, dbx)
+#upload_adafruitio(pic_name, aio, topic)
