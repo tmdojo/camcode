@@ -136,7 +136,7 @@ upload_dropbox(pic_name, dbx)
 #upload_adafruitio(pic_name, aio, topic)
 #pic_name = "/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/2018/2/12/20180212000016.jpg"
 #pic_name2 = "/home/pi/Pictures/2018/2/12/20180212000016.jpg"
-s3.Bucket(BUCKET_NAME).upload_file(pic_name, pic_name)
+s3.Bucket(BUCKET_NAME).upload_file(pic_name, pic_name.split("/home/pi/")[1])
 # test
 #for obj in s3.Bucket(BUCKET_NAME).objects.all():
 #   print(obj.key)
