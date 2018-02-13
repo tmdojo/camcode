@@ -7,6 +7,9 @@ from pytz import timezone
 import subprocess
 
 from PIL import Image, ImageDraw, ImageFont
+import boto3
+
+from secret import *
 
 def get_yesterday():
     """
@@ -24,6 +27,14 @@ def get_video_name(datestring):
     d = datetime.strptime(datestring, "%Y/%m/%d")
     return "{}.mp4".format(d.strftime("%Y%m%d"))
 
+def get_video_name_s3(datestring):
+    """
+    datestring is in "2018/2/7" format
+    returns "Movies/2018/20180207.mp4" format
+    """
+    d = datetime.strptime(datestring, "%Y/%m/%d")
+    return "Movies/{}/{}.mp4".format(d.year, d.strftime("%Y%m%d"))
+
 def decode_filename(fname):
     """
     fname: full path of image file
@@ -35,11 +46,12 @@ def decode_filename(fname):
     dt_utc =  timezone('UTC').localize(dt)
     return dt_utc
 
-BASE_DIR='/home/pi/Pictures/'
-#BASE_DIR='/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/'
+#BASE_DIR='/home/pi/Pictures/'
+BASE_DIR='/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/'
 target_folder = get_yesterday()
 #target_folder = "2018/2/7"
 target_video_name = get_video_name(target_folder)
+target_video_name_s3 = get_video_name_s3(target_folder)
 tmp_folder = "temp"
 
 full_path = os.path.join(BASE_DIR, target_folder)
@@ -70,8 +82,18 @@ for i, imgpath in enumerate(jpegs):
 fps = 15
 im_files = os.path.join(tmp_path, "im%04d.jpg")
 #video_file = os.path.join(tmp_path, "movie{fps}.mp4".format(fps=fps))
-video_file = os.path.join(tmp_path, target_video_name)
+video_file = os.path.join(BASE_DIR, target_video_name_s3)
+video_file_folder = os.path.dirname(video_file)
+if not os.path.exists(video_file_folder):
+    os.makedirs(video_file_folder)
+# video_file = '/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/temp/20180212.mp4'
 cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_file)
 subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
+s3 = boto3.resource('s3',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+#bucket = s3.Bucket(BUCKET_NAME)
+s3.Bucket(BUCKET_NAME).upload_file(video_file, target_video_name_s3)
 
 #TODO: delete temp folder
