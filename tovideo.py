@@ -9,31 +9,49 @@ import subprocess
 from PIL import Image, ImageDraw, ImageFont
 import boto3
 
+from camcode import BASE_DIR, PICTURES, MOVIES, get_pic_dir
+from camcode import prep_s3
 from secret import *
 
-def get_yesterday():
+def get_pic_dir_yesterday():
     """
-    returns string in "2018/2/7" format
+    returns string in "Pictures/2018/2/7" format
     """
     today = datetime.today()
     yesterday = today - timedelta(days=1)
-    return "{}/{}/{}".format(yesterday.year, yesterday.month, yesterday.day)
+    return get_pic_dir(yesterday)[1]
 
-def get_video_name(datestring):
-    """
-    datestring is in "2018/2/7" format
-    returns "20180207.mp4" format
-    """
-    d = datetime.strptime(datestring, "%Y/%m/%d")
-    return "{}.mp4".format(d.strftime("%Y%m%d"))
-
-def get_video_name_s3(datestring):
+def get_video_filename(d):
     """
     datestring is in "2018/2/7" format
     returns "Movies/2018/20180207.mp4" format
     """
-    d = datetime.strptime(datestring, "%Y/%m/%d")
-    return "Movies/{}/{}.mp4".format(d.year, d.strftime("%Y%m%d"))
+    return d.strftime("%Y%m%d.mp4")
+
+def get_video_dir(d):
+    """
+    d: datetime.datetime instance
+    creates prefix directries as "Movie/2018/"
+    create local full path directory if not exists
+    returns full path and prefix
+    """
+    prefix = os.path.join(MOVIES, str(d.year))
+    full_path = os.path.join(BASE_DIR, prefix)
+    if not os.path.exists(full_path):
+        print("Make folder: ".format(full_path))
+        os.makedirs(full_path)
+    return (full_path, prefix)
+
+def get_video_dir_fname(datestring):
+    """
+    datestring is in "2018/2/7" format
+    returns "Movies/2018/20180207.mp4" format
+    """
+    d = datetime.strptime(datestring, PICTURES+"/"+"%Y/%m/%d")
+    full_path, prefix = get_video_dir(d)
+    video_filename = get_video_filename(d)
+    return (os.path.join(full_path, video_filename),
+            os.path.join(prefix, video_filename))
 
 def decode_filename(fname):
     """
@@ -46,12 +64,9 @@ def decode_filename(fname):
     dt_utc =  timezone('UTC').localize(dt)
     return dt_utc
 
-#BASE_DIR='/home/pi/Pictures/'
-BASE_DIR='/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/'
-target_folder = get_yesterday()
-#target_folder = "2018/2/7"
-target_video_name = get_video_name(target_folder)
-target_video_name_s3 = get_video_name_s3(target_folder)
+target_folder = get_pic_dir_yesterday()
+#target_folder = "Pictures/2018/2/16"
+(video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
 tmp_folder = "temp"
 
 full_path = os.path.join(BASE_DIR, target_folder)
@@ -59,15 +74,18 @@ jpegs = sorted(glob.glob(full_path + "/*.jpg"))
 tmp_path = os.path.join(BASE_DIR, tmp_folder)
 if os.path.exists(tmp_path):
     # delete temp folder if exit
+    print("Delete folder: {}".format(tmp_path))
     shutil.rmtree(tmp_path, ignore_errors=True)
 if not os.path.exists(tmp_path):
+    print("Make folder: {}".format(tmp_path))
     os.makedirs(tmp_path)
 
 n_images = len(jpegs)
 for i, imgpath in enumerate(jpegs):
     #i=0
     #imgpath = jpegs[i]
-    print("{}/{}".format(i, n_images))
+    if i % 10 == 0:
+        print("{}/{}".format(i, n_images))
     dt = decode_filename(imgpath)
     dt_jst = dt.astimezone(timezone('Asia/Tokyo'))
     timestamp = dt_jst.strftime("%Y-%m-%d %H:%M:%S")
@@ -81,19 +99,18 @@ for i, imgpath in enumerate(jpegs):
 #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
 fps = 15
 im_files = os.path.join(tmp_path, "im%04d.jpg")
-#video_file = os.path.join(tmp_path, "movie{fps}.mp4".format(fps=fps))
-video_file = os.path.join(BASE_DIR, target_video_name_s3)
-video_file_folder = os.path.dirname(video_file)
-if not os.path.exists(video_file_folder):
-    os.makedirs(video_file_folder)
-# video_file = '/Users/shunya/Dropbox/アプリ/dojo_picam1/home/pi/Pictures/temp/20180212.mp4'
-cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_file)
+cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
 subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
-s3 = boto3.resource('s3',
-    region_name=AWS_REGION,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-#bucket = s3.Bucket(BUCKET_NAME)
-s3.Bucket(BUCKET_NAME).upload_file(video_file, target_video_name_s3)
-
-#TODO: delete temp folder
+if os.uname().machine.startswith("arm"):
+    # run on Raspberry Pi
+    from camcode import prep_dropbox, upload_dropbox
+    dbx = prep_dropbox()
+    upload_dropbox(video_name_full_path, video_name_prefix, dbx)
+s3 = prep_s3()
+print("Upload to s3: {}".format(video_name_full_path))
+s3.Bucket(BUCKET_NAME).upload_file(video_name_full_path, video_name_prefix)
+print("DONE!")
+if os.path.exists(tmp_path):
+    # delete temp folder if exit
+    print("Delte folder: {}".format(tmp_path))
+    shutil.rmtree(tmp_path, ignore_errors=True)
