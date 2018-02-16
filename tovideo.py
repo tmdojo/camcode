@@ -64,53 +64,68 @@ def decode_filename(fname):
     dt_utc =  timezone('UTC').localize(dt)
     return dt_utc
 
-target_folder = get_pic_dir_yesterday()
-#target_folder = "Pictures/2018/2/16"
-(video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
-tmp_folder = "temp"
+if __name__ == '__main__':
+    target_folder = get_pic_dir_yesterday()
+    #target_folder = "Pictures/2018/2/16"
+    (video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
 
-full_path = os.path.join(BASE_DIR, target_folder)
-jpegs = sorted(glob.glob(full_path + "/*.jpg"))
-tmp_path = os.path.join(BASE_DIR, tmp_folder)
-if os.path.exists(tmp_path):
-    # delete temp folder if exit
-    print("Delete folder: {}".format(tmp_path))
-    shutil.rmtree(tmp_path, ignore_errors=True)
-if not os.path.exists(tmp_path):
-    print("Make folder: {}".format(tmp_path))
-    os.makedirs(tmp_path)
+    # read pictures, add timestamp and make temp files
+    tmp_folder = "temp"
+    full_path = os.path.join(BASE_DIR, target_folder)
+    jpegs = sorted(glob.glob(full_path + "/*.jpg"))
+    tmp_path = os.path.join(BASE_DIR, tmp_folder)
+    if os.path.exists(tmp_path):
+        # delete temp folder if exit
+        print("Delete folder: {}".format(tmp_path))
+        shutil.rmtree(tmp_path, ignore_errors=True)
+    if not os.path.exists(tmp_path):
+        print("Make folder: {}".format(tmp_path))
+        os.makedirs(tmp_path)
 
-n_images = len(jpegs)
-for i, imgpath in enumerate(jpegs):
-    #i=0
-    #imgpath = jpegs[i]
-    if i % 10 == 0:
-        print("{}/{}".format(i, n_images))
-    dt = decode_filename(imgpath)
-    dt_jst = dt.astimezone(timezone('Asia/Tokyo'))
-    timestamp = dt_jst.strftime("%Y-%m-%d %H:%M:%S")
-    im = Image.open(imgpath)
-    d = ImageDraw.Draw(im)
-    d.text((10,im.size[1]-15), timestamp, fill=(255,255,255))
-    del d
-    im.save(os.path.join(tmp_path, "im{:04d}.jpg".format(i)))
+    n_images = len(jpegs)
+    for i, imgpath in enumerate(jpegs):
+        #i=0
+        #imgpath = jpegs[i]
+        if i % 10 == 0:
+            print("{}/{}".format(i, n_images))
+        dt = decode_filename(imgpath)
+        dt_jst = dt.astimezone(timezone('Asia/Tokyo'))
+        timestamp = dt_jst.strftime("%Y-%m-%d %H:%M:%S")
+        im = Image.open(imgpath)
+        d = ImageDraw.Draw(im)
+        d.text((10,im.size[1]-15), timestamp, fill=(255,255,255))
+        del d
+        im.save(os.path.join(tmp_path, "im{:04d}.jpg".format(i)))
 
-#cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec mpeg4 -y movie.mp4"
-#cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
-fps = 15
-im_files = os.path.join(tmp_path, "im%04d.jpg")
-cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
-subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
-if os.uname().machine.startswith("arm"):
-    # run on Raspberry Pi
-    from camcode import prep_dropbox, upload_dropbox
-    dbx = prep_dropbox()
-    upload_dropbox(video_name_full_path, video_name_prefix, dbx)
-s3 = prep_s3()
-print("Upload to s3: {}".format(video_name_full_path))
-s3.Bucket(BUCKET_NAME).upload_file(video_name_full_path, video_name_prefix)
-print("DONE!")
-if os.path.exists(tmp_path):
-    # delete temp folder if exit
-    print("Delte folder: {}".format(tmp_path))
-    shutil.rmtree(tmp_path, ignore_errors=True)
+    # make video
+    #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec mpeg4 -y movie.mp4"
+    #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
+    fps = 15
+    im_files = os.path.join(tmp_path, "im%04d.jpg")
+    cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
+    subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
+
+    # upload
+    if os.uname().machine.startswith("arm"):
+        # run on Raspberry Pi
+        from camcode import prep_dropbox, upload_dropbox
+        dbx = prep_dropbox()
+        upload_dropbox(video_name_full_path, video_name_prefix, dbx)
+    s3 = prep_s3()
+    print("Upload to s3: {}".format(video_name_full_path))
+    s3.Bucket(BUCKET_NAME).upload_file(video_name_full_path, video_name_prefix)
+    print("DONE!")
+
+    # clean up
+    if os.path.exists(tmp_path):
+        # delete temp folder if exit
+        print("Delete folder: {}".format(tmp_path))
+        shutil.rmtree(tmp_path, ignore_errors=True)
+    if os.uname().machine.startswith("arm"):
+        # run on Raspberry Pi
+        # delete picture folder
+        print("Delete folder: {}".format(full_path))
+        shutil.rmtree(full_path, ignore_errors=True)
+        # delete movie file
+        print("Delete file: {}".format(video_name_full_path))
+        os.remove(video_name_full_path)

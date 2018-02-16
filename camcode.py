@@ -17,14 +17,14 @@ import boto3
 from secret import *
 
 """
-Base directory for local file system and Dropbox
+Base directory for local file system
 /home/pi/
 
 path and file name for each pictures
 Pictures/2018/2/14/20180214153416.jpg
 
 temp path and file for making video
-Pictures/temp/im0000.jpg
+temp/im0000.jpg
 
 video output path and file name
 Movies/2018/20180207.mp4
