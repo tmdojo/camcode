@@ -67,6 +67,10 @@ def decode_filename(fname):
 if __name__ == '__main__':
     target_folder = get_pic_dir_yesterday()
     #target_folder = "Pictures/2018/2/16"
+    if not os.path.exists(target_folder):
+        print("Target folder does not exist!: {}".format(target_folder))
+        import sys
+        sys.exit(0)
     (video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
 
     # read pictures, add timestamp and make temp files
