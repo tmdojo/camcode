@@ -123,6 +123,7 @@ def upload_dropbox(pic_name_full_path, pic_name_prefix, dbx):
     pic_name_full_path: image file name
     dbx: dropbox.Dropbox instance
     """
+    pic_name_prefix = '/'+pic_name_prefix
     with open(pic_name_full_path, 'rb') as f:
         # We use WriteMode=overwrite to make sure that the settings in the file
         # are changed on upload
