@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import boto3
 
 from camcode import BASE_DIR, PICTURES, MOVIES, get_pic_dir
-from camcode import prep_s3
+from camcode import upload_s3
 from secret import *
 
 def get_pic_dir_yesterday():
@@ -108,12 +108,10 @@ if __name__ == '__main__':
     # upload
     if os.uname().machine.startswith("arm"):
         # run on Raspberry Pi
-        from camcode import prep_dropbox, upload_dropbox
-        dbx = prep_dropbox()
-        upload_dropbox(video_name_full_path, video_name_prefix, dbx)
-    s3 = prep_s3()
+        from camcode import upload_dropbox
+        upload_dropbox(video_name_full_path, video_name_prefix)
     print("Upload to s3: {}".format(video_name_full_path))
-    s3.Bucket(BUCKET_NAME).upload_file(video_name_full_path, video_name_prefix)
+    upload_success_s3 = upload_s3(video_name_full_path, video_name_prefix)
     print("DONE!")
 
     # clean up
@@ -121,7 +119,7 @@ if __name__ == '__main__':
         # delete temp folder if exit
         print("Delete folder: {}".format(tmp_path))
         shutil.rmtree(tmp_path, ignore_errors=True)
-    if os.uname().machine.startswith("arm"):
+    if os.uname().machine.startswith("arm") and upload_success_s3:
         # run on Raspberry Pi
         # delete picture folder
         print("Delete folder: {}".format(full_path))

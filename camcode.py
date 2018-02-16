@@ -118,11 +118,12 @@ def take_picture():
     return (pic_name_full_path, pic_name_prefix)
 
 # Uploads contents of pic_name to Dropbox
-def upload_dropbox(pic_name_full_path, pic_name_prefix, dbx):
+def upload_dropbox(pic_name_full_path, pic_name_prefix):
     """
     pic_name_full_path: image file name
     dbx: dropbox.Dropbox instance
     """
+    dbx = prep_dropbox()
     pic_name_prefix = '/'+pic_name_prefix
     with open(pic_name_full_path, 'rb') as f:
         # We use WriteMode=overwrite to make sure that the settings in the file
@@ -141,6 +142,19 @@ def upload_dropbox(pic_name_full_path, pic_name_prefix, dbx):
             else:
                 print(err)
                 #sys.exit()
+            return False
+        else:
+            return True
+
+def upload_s3(pic_name_full_path, pic_name_prefix):
+    s3 = prep_s3()
+    try:
+        s3.Bucket(BUCKET_NAME).upload_file(pic_name_full_path, pic_name_prefix)
+    except boto3.exceptions.S3UploadFailedError:
+        print("ERROR: failed to upload to s3")
+        return False
+    else:
+        return True
 
 if __name__ == '__main__':
     if not os.uname().machine.startswith("arm"):
@@ -174,10 +188,8 @@ if __name__ == '__main__':
     sleep(2)
 
     (pic_name_full_path, pic_name_prefix) = take_picture()
-    dbx = prep_dropbox()
-    upload_dropbox(pic_name_full_path, pic_name_prefix, dbx)
-    s3 = prep_s3()
-    s3.Bucket(BUCKET_NAME).upload_file(pic_name_full_path, pic_name_prefix)
+    upload_dropbox(pic_name_full_path, pic_name_prefix)
+    upload_s3(pic_name_full_path, pic_name_prefix)
     # test
     #for obj in s3.Bucket(BUCKET_NAME).objects.all():
     #   print(obj.key)
