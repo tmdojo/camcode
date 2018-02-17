@@ -66,18 +66,19 @@ def decode_filename(fname):
 
 if __name__ == '__main__':
     target_folder = get_pic_dir_yesterday()
-    #target_folder = "Pictures/2018/2/16"
-    if not os.path.exists(os.path.join(BASE_DIR, target_folder)):
-        print("Target folder does not exist!: {}".format(target_folder))
-        import sys
-        sys.exit(0)
-    (video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
+    #target_folder = "Pictures/2018/2/15"
 
+    (video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
     # read pictures, add timestamp and make temp files
     tmp_folder = "temp"
     full_path = os.path.join(BASE_DIR, target_folder)
     jpegs = sorted(glob.glob(full_path + "/*.jpg"))
     tmp_path = os.path.join(BASE_DIR, tmp_folder)
+    # abort if no image is available
+    if len(jpegs) == 0:
+        print("No image in folder!: {}".format(target_folder))
+        import sys
+        sys.exit(0)
     if os.path.exists(tmp_path):
         # delete temp folder if exit
         print("Delete folder: {}".format(tmp_path))
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 
     # make video
     # -movflags faststart: https://rigor.com/blog/2016/01/optimizing-mp4-video-for-fast-streaming
-    #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K  -movflags faststart -y movie.mp4
+    #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K -movflags faststart -y movie.mp4
     #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -f mp4 -crf 22 -s 320x240 movie.mp4
     #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec libx264 -an -movflags faststart -y movie.mp4"
     #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec libx264 -an -movflags faststart -y movie.mp4"
@@ -111,7 +112,7 @@ if __name__ == '__main__':
     #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
     fps = 15
     im_files = os.path.join(tmp_path, "im%04d.jpg")
-    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K  -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
+    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
     subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
 
     # upload
