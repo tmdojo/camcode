@@ -104,6 +104,7 @@ if __name__ == '__main__':
 
     # make video
     # -movflags faststart: https://rigor.com/blog/2016/01/optimizing-mp4-video-for-fast-streaming
+    # quality is good but takes time to encode on Pi
     #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K -movflags faststart -y movie.mp4
     #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -f mp4 -crf 22 -s 320x240 movie.mp4
     #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec libx264 -an -movflags faststart -y movie.mp4"
@@ -112,7 +113,7 @@ if __name__ == '__main__':
     #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
     fps = 15
     im_files = os.path.join(tmp_path, "im%04d.jpg")
-    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
+    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -s 320x240 -b:v 370K -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
     subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
 
     # upload
