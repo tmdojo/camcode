@@ -67,7 +67,7 @@ def decode_filename(fname):
 if __name__ == '__main__':
     target_folder = get_pic_dir_yesterday()
     #target_folder = "Pictures/2018/2/16"
-    if not os.path.exists(target_folder):
+    if not os.path.exists(os.path.join(BASE_DIR, target_folder)):
         print("Target folder does not exist!: {}".format(target_folder))
         import sys
         sys.exit(0)
@@ -102,11 +102,16 @@ if __name__ == '__main__':
         im.save(os.path.join(tmp_path, "im{:04d}.jpg".format(i)))
 
     # make video
-    #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec mpeg4 -y movie.mp4"
+    # -movflags faststart: https://rigor.com/blog/2016/01/optimizing-mp4-video-for-fast-streaming
+    #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K  -movflags faststart -y movie.mp4
+    #ffmpeg -r 15 -i im%04d.jpg -an -vcodec libx264 -f mp4 -crf 22 -s 320x240 movie.mp4
+    #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec libx264 -an -movflags faststart -y movie.mp4"
+    #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec libx264 -an -movflags faststart -y movie.mp4"
+    #cmd = "ffmpeg -f image2 -r 15 -i im%04d.jpg -vcodec mpeg4 -movflags faststart -y movie.mp4"
     #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
     fps = 15
     im_files = os.path.join(tmp_path, "im%04d.jpg")
-    cmd = "ffmpeg -r {fps} -i {im_files} -vcodec mpeg4 -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
+    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K  -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
     subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
 
     # upload
