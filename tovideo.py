@@ -113,7 +113,7 @@ if __name__ == '__main__':
     #cmd = "ffmpeg -f image2 -r 5 -i im%04d.jpg -vcodec mpeg4 -y movie5.mp4"
     fps = 15
     im_files = os.path.join(tmp_path, "im%04d.jpg")
-    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -s 320x240 -b:v 370K -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
+    cmd = "ffmpeg -r {fps} -i {im_files} -an -vcodec libx264 -preset slow -s 320x240 -b:v 370K -movflags faststart -y {video_file}".format(fps=fps, im_files=im_files, video_file=video_name_full_path)
     subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
 
     # upload
