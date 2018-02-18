@@ -42,12 +42,11 @@ def get_video_dir(d):
         os.makedirs(full_path)
     return (full_path, prefix)
 
-def get_video_dir_fname(datestring):
+def get_video_dir_fname(d):
     """
-    datestring is in "2018/2/7" format
+    d: datetime.datetime instance
     returns "Movies/2018/20180207.mp4" format
     """
-    d = datetime.strptime(datestring, PICTURES+"/"+"%Y/%m/%d")
     full_path, prefix = get_video_dir(d)
     video_filename = get_video_filename(d)
     return (os.path.join(full_path, video_filename),
@@ -68,7 +67,8 @@ if __name__ == '__main__':
     target_folder = get_pic_dir_yesterday()
     #target_folder = "Pictures/2018/2/15"
 
-    (video_name_full_path, video_name_prefix) = get_video_dir_fname(target_folder)
+    d = datetime.strptime(target_folder, PICTURES+"/"+"%Y/%m/%d")
+    (video_name_full_path, video_name_prefix) = get_video_dir_fname(d)
     # read pictures, add timestamp and make temp files
     tmp_folder = "temp"
     full_path = os.path.join(BASE_DIR, target_folder)
