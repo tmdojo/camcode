@@ -44,6 +44,7 @@ PICTURES = 'Pictures'
 MOVIES = 'Movies'
 BASE_DIR_PICTURES = os.path.join(BASE_DIR, PICTURES)
 BASE_DIR_MOVIES = os.path.join(BASE_DIR, MOVIES)
+NOW_PICTURE = os.path.join(PICTURES, 'now.jpg')
 
 def get_pic_filename(d):
     """
@@ -190,6 +191,7 @@ if __name__ == '__main__':
     (pic_name_full_path, pic_name_prefix) = take_picture()
     upload_dropbox(pic_name_full_path, pic_name_prefix)
     upload_s3(pic_name_full_path, pic_name_prefix)
+    upload_s3(pic_name_full_path, NOW_PICTURE)
     # test
     #for obj in s3.Bucket(BUCKET_NAME).objects.all():
     #   print(obj.key)
